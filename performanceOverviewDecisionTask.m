@@ -1,11 +1,13 @@
 function [performanceMetrics, figureHandle,outputLoc] = performanceOverviewDecisionTask(sessionFile,outputLoc, sessionsBack);
 %
 %
+%
+%
 %--------------------------------------------------------------------------
-% Convenience
-addpath(genpath('C:\Users\Lukas Oesch\Documents\MATLAB\Violinplot-Matlab-master'));
-addpath(genpath('C:\Users\Lukas Oesch\Documents\MATLAB\Palamedes'));
-
+%Find the directory where the running function is located and add the
+%functions folder
+function_dir = fileparts(mfilename('fullpath'));
+addpath(fullfile(function_dir,'functions')); %Sorry for the abusive naming...
 %
 performanceMetrics = [];
 if ~exist('sessionsBack') || isempty(sessionsBack)
