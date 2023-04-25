@@ -1,4 +1,4 @@
-classdef Violin < handle
+classdef violin < handle
     % Violin creates violin plots for some data
     %   A violin plot is an easy to read substitute for a box plot
     %   that replaces the box shape with a kernel density estimate of
@@ -71,7 +71,7 @@ classdef Violin < handle
     end
 
     methods
-        function obj = Violin(data, pos, varargin)
+        function obj = violin(data, pos, varargin)
             %Violin plots a violin plot of some data at pos
             %   VIOLIN(DATA, POS) plots a violin at x-position POS for
             %   a vector of DATA points.
