@@ -660,6 +660,7 @@ psychometricPlotsColor(3,:) = [0.3 0.3 0.3]; %plot multi-sensory stimuli in dark
 
 %--plotting
 fi = figure('Position',[49, 42, 0.9*1280, 0.9*720],'NumberTitle','off','MenuBar','none');
+fi.WindowState = 'maximized';
 %
 %Start the panel structure
 figPanels = struct();
