@@ -1,0 +1,3 @@
+[submodule "Violinplot-Matlab"]
+	path = Violinplot-Matlab
+	url = https://github.com/bastibe/Violinplot-Matlab.git
