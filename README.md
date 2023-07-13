@@ -1,1 +1,4 @@
 # chipmunk_performance_plots
+This directory contains the submodule "Violinplot-Matlab". You can see the details of this submodule by running `cat .gitmodules`, or just viewing the `.gitmodules` file with your viewer of choice. When cloning this project, you will clone the submodule directory, but you will need to initiate it. To do this, you must move to the submodule directory and run `git submodule init`. This will initialize the local configuration file. Lastly, since the submodule is git controlled independently from this repo, run `git submodule update` to fetch the data from that project.
+
+A simpler way to do this is if you have not cloned this repo yet, add the `--recursive-submodules` flag to the `git clone` command. This will automatically initialize and update every submodule contained in this repo. Check out git's official documentation on submodules for more information.
