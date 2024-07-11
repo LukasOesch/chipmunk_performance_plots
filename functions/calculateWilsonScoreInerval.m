@@ -1,3 +1,4 @@
+
 function [lowerBound, upperBound] = calculateWilsonScoreInerval(data);
 % [lowerBound, upperBound] = calculateWilsonScoreInerval(data);
 %
