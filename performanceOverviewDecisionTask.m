@@ -1,4 +1,4 @@
-function [performanceMetrics, figureHandle,outputLoc] = performanceOverviewDecisionTask(sessionFile,outputLoc, sessionsBack);
+function [performanceMetrics, figureHandle,outputLoc] = performanceOverviewDecisionTask(sessionFile,outputLoc, sessionsBack)
 %
 %
 %
@@ -11,13 +11,13 @@ addpath(fullfile(function_dir,'functions')); %Sorry for the abusive naming...
 addpath(genpath(fullfile(function_dir,'Violinplot-Matlab')));
 %
 performanceMetrics = [];
-if ~exist('sessionsBack') || isempty(sessionsBack)
+if ~exist('sessionsBack', 'var') || isempty(sessionsBack)
 sessionsBack = 5; %how many sessions back should be analysed
 end
 trialTimeBinSize = 4; %minutes
 
 %Convenience
-if ~exist('sessionFile') || isempty(sessionFile) %let the user pick a file if nothing has been specified
+if ~exist('sessionFile', 'var') || isempty(sessionFile) %let the user pick a file if nothing has been specified
    [fileName, fileFolder] = uigetfile('*.mat','Select the session');
    sessionFile = fullfile(fileFolder, fileName);
    [fileFolder, fileName, fileExt] = fileparts(sessionFile);
@@ -37,7 +37,7 @@ listFiles = dir(fullfile(fileFolder,['*' fileExt(2:end)])); %Get all the files i
 
 %Determine whether the chipmunk data live in the churchland lab directory
 %structure or whether they are all grouped together in one folder per mouse
-if strcmp(parentDir, 'chipmunk') & (length(listFiles)==1)
+if strcmp(parentDir, 'chipmunk') & (isscalar(listFiles))
     parts = strsplit(fileFolder, filesep);
     sessionDate = parts{end-1}; %Retrieve the session data
     
@@ -103,13 +103,14 @@ else
                         end
                     end
                 end
-                if length(dateStart) == 1
+                if isscalar(dateStart)
                     pos = pos(dateStart);
                 else
                     error('Found multiple 7-digit number inside you file name, date could not be extracted.')
                 end
             end
-            sessionFileDateTime(k) = datenum(datetime(listFiles(k).name(pos:pos+14),'InputFormat','yyyyMMdd_HHmmss'));
+            sessionFileDateTime(k) = datetime(listFiles(k).name(pos:pos+14), 'InputFormat', 'yyyyMMdd_HHmmss');
+            % sessionFileDateTime(k) = datenum(datetime(listFiles(k).name(pos:pos+14),'InputFormat','yyyyMMdd_HHmmss'));
         else
             sessionFileDateTime(k) = 0;
         end
@@ -137,7 +138,7 @@ else
     end
 end
 
-if ~exist('outputLoc') || isempty(outputLoc) %let the user pick a file if nothing has been specified
+if ~exist('outputLoc', 'var') || isempty(outputLoc) %let the user pick a file if nothing has been specified
    outputLoc = uigetdir(fileFolder,'Select the output folder');
 end
 
@@ -174,7 +175,7 @@ for s = 1:sessionsBack+1
 load(includeFiles{s});
 
 newChipmunk = false;
-if isfield(SessionData.TrialSettings(1),'smaAssembler'); %Check whether this is the newer implementatio of chipmunk from June 2021
+if isfield(SessionData.TrialSettings(1),'smaAssembler') %Check whether this is the newer implementatio of chipmunk from June 2021
     newChipmunk = true;
 end
 
@@ -190,15 +191,16 @@ end
 %also to process the data adequately
 if isfield(SessionData,'TaskPhase')
     experimentName{s} = SessionData.TaskPhase;
-elseif SessionData.TrialSettings(1).initCenterStimUntilCorrect == 1;
+elseif SessionData.TrialSettings(1).initCenterStimUntilCorrect == 1
     experimentName{s} = 'initCenterStimUntilCorrect';
-elseif SessionData.TrialSettings(1).holdCenterStimUntilCorrect == 1;
+elseif SessionData.TrialSettings(1).holdCenterStimUntilCorrect == 1
     experimentName{s} = 'holdCenterStimUntilCorrect';
 else
     experimentName{s} = 'Habituation';
 end
 
-dates{s} = string(datetime(datestr(SessionData.Info.SessionDate),'Format','MM/dd'));
+% dates{s} = string(datetime(datestr(SessionData.Info.SessionDate),'Format','MM/dd'));
+dates{s} = string(datetime(SessionData.Info.SessionDate, 'Format', 'MM/dd'));
 % try
 % dates{s} = string(datetime(includeFiles{s}(end-18:end-11),'InputFormat','yyyyMMdd','Format','MM/dd'));
 % catch
@@ -265,7 +267,7 @@ if newChipmunk
 elseif ~isempty(strfind(SessionData.TaskPhase, 'holdCenterStimUntilCorrect')) || ~isempty(strfind(SessionData.TaskPhase,'Fixation'))
     for n=1:SessionData.nTrials
         P1visits = []; P3visits = [];
-        if SessionData.EarlyWithdrawal(n) == 0 & SessionData.DidNotChoose(n) == 0
+        if SessionData.EarlyWithdrawal(n) == 0 && SessionData.DidNotChoose(n) == 0
             if isfield(SessionData.RawEvents.Trial{1,n}.Events, 'Port1In')
                 P1visits = SessionData.RawEvents.Trial{1,n}.Events.Port1In(find(SessionData.RawEvents.Trial{1,n}.Events.Port1In > SessionData.RawEvents.Trial{1,n}.States.WaitCenter(1)));
             end
@@ -310,7 +312,7 @@ wrongOnLeftTrial = sum(SessionData.CorrectSide(wrongChoiceInd) == 1)/sum(Session
 wrongOnRightTrial = sum(SessionData.CorrectSide(wrongChoiceInd) == 2)/sum(SessionData.CorrectSide == 2);
 end
 %leftwardBias(s) = (wrongOnRightTrial/(wrongOnLeftTrial+wrongOnRightTrial)-0.5)*2;
-leftwardBias(s) = (wrongOnRightTrial/(wrongOnLeftTrial+wrongOnRightTrial)-0.5)/nanmean(performance{s});
+leftwardBias(s) = (wrongOnRightTrial/(wrongOnLeftTrial+wrongOnRightTrial)-0.5)/mean(performance{s}, 'omitnan');
 
 %--------------------------------------------------------------------------
 % Get the aboulute wait time and the set wait times to compute the
@@ -332,18 +334,18 @@ if newChipmunk
         end
         absoluteWaitTime{s}(end+1) = SessionData.ActualWaitTime(n);
         %stimFreq{s}(end+1) = SessionData.StimulusRate(n,SessionData.Modality(n));
-        if ~isnan(SessionData.StimulusRate(n,1)) & isnan(SessionData.StimulusRate(n,2)) %Visual only
+        if ~isnan(SessionData.StimulusRate(n,1)) && isnan(SessionData.StimulusRate(n,2)) %Visual only
             stimFreq{s}(end+1,:) = [SessionData.StimulusRate(n,1) nan nan];
-        elseif isnan(SessionData.StimulusRate(n,1)) & ~isnan(SessionData.StimulusRate(n,2)) %Auditory only
+        elseif isnan(SessionData.StimulusRate(n,1)) && ~isnan(SessionData.StimulusRate(n,2)) %Auditory only
             stimFreq{s}(end+1,:) = [nan SessionData.StimulusRate(n,2) nan];
-        elseif ~isnan(SessionData.StimulusRate(n,1)) & ~isnan(SessionData.StimulusRate(n,2)) %Audiovisual 
+        elseif ~isnan(SessionData.StimulusRate(n,1)) && ~isnan(SessionData.StimulusRate(n,2)) %Audiovisual 
             stimFreq{s}(end+1,:) = [nan nan SessionData.StimulusRate(n,1)];
         end
         if SessionData.ValidTrials(n) == 1
             
             %%%%%%%%%%TEMPORARY%%%%%%%%%%%%%%
             if ~isfield(SessionData.RawEvents.Trial{n}.States, 'DemonWaitForWithdrawalFromCenter')
-                idx = min(find(SessionData.RawEvents.Trial{n}.Events.Port2Out > SessionData.RawEvents.Trial{n}.States.DemonWaitForResponse(1)));
+                idx = find(SessionData.RawEvents.Trial{n}.Events.Port2Out > SessionData.RawEvents.Trial{n}.States.DemonWaitForResponse(1), 1 );
                 motionTime{s}(end+1) = SessionData.RawEvents.Trial{n}.States.DemonWaitForResponse(2)- SessionData.RawEvents.Trial{n}.Events.Port2Out(idx);
                 gapTime{s}(end+1) = (SessionData.RawEvents.Trial{n}.States.DemonWaitForResponse(2) - SessionData.RawEvents.Trial{n}.States.PlayStimulus(2)) - (SessionData.ExtraStimDuration(n) + SessionData.TotalStimDuration(n));
                 if gapTime{s}(end) < 0
@@ -439,20 +441,20 @@ choicePredictors = NaN(SessionData.nTrials-1,2);
 %The model takes the form:
 %choice ~ constantSideBias + a1*Stimulus + a2*ChoosingSamePortAgain
 for k = 2:SessionData.nTrials %here only
-    if ~isnan(correctChoice(k)) & ~isnan(correctChoice(k-1))
+    if ~isnan(correctChoice(k)) && ~isnan(correctChoice(k-1))
         %First column is the stimulus. Here, we look at the case for
         %the easiest condition with only two stimuli, thus we can set
         %the left indicating to 0 and right indicating one to 1
         choicePredictors(k-1,1) = SessionData.CorrectSide(k)-1;
         if ~isempty(strfind(experimentName{s},'holdCenterStimUntilCorrect')) || (isfield(SessionData,'reviseChoiceFlag') && SessionData.reviseChoiceFlag)
-            if correctChoice(k-1) == 0 & SessionData.Rewarded(k-1) == 1 %If the mouse revises then it will be at the other port to start a new trial
+            if correctChoice(k-1) == 0 && SessionData.Rewarded(k-1) == 1 %If the mouse revises then it will be at the other port to start a new trial
                 if responseSide(k-1) == 2
                     choicePredictors(k-1,2) = 0; %If animal responded incorrectly to the right but harvested on the left count as response on the left
                 else
                     choicePredictors(k-1,2) = 1; %Vice versa if incorrect on left
                 end
-            elseif correctChoice(k-1) == 0 & SessionData.Rewarded(k-1) == 1
-                choicePredictors(k-1,2) = responseSide(k-1)-1;
+            % elseif correctChoice(k-1) == 0 && SessionData.Rewarded(k-1) == 1
+            %     choicePredictors(k-1,2) = responseSide(k-1)-1;
             end
         else
             choicePredictors(k-1,2) = responseSide(k-1)-1;
@@ -471,7 +473,7 @@ if newChipmunk
 end
 
 lastwarn(''); %clear the last warning
-[choiceCoef(:,s), dev, choiceModelStats{s}] = glmfit(choicePredictors,sidesChosen,'binomial','link','logit');
+[choiceCoef(:,s), ~, choiceModelStats{s}] = glmfit(choicePredictors,sidesChosen,'binomial','link','logit');
 modelFitWarnings{s} = lastwarn;
 if ~isempty(lastwarn)
     choiceCoef(:,s) = NaN(3,1);
@@ -538,7 +540,7 @@ initiationDelayBinCenters = initDelayBinEdges(1:end-1) + 0.1;
  window = 24; trialVect = []; withinPerformance = []; withinEarlyWithdrawals = [];
  for k=window/2:1:SessionData.nTrials-(window/2)
      withinPerformance(:,end+1) = correctChoice(k-window/2+1:k+window/2)';
-     withinEarlyWithdrawals(end+1) = nanmean(earlyWithdrawals{end}(k-window/2+1:k+window/2));
+     withinEarlyWithdrawals(end+1) = mean(earlyWithdrawals{end}(k-window/2+1:k+window/2), 'omitnan');
      trialVect(end+1) = k;
  end
 %--------------------------------------------------------------------------
@@ -561,7 +563,7 @@ for k = 1:SessionData.nTrials
        % rightSideChoices{find(uniqueFreqVals == stimFreq{end}(k,modality_idx))}(end+1) = responseSide(k);
          rightSideChoices{inCols, currentFreq(1)}(end+1) = responseSide(k); %Assign to the proper modality
     else
-        rightSideChoices{find(uniqueFreqVals == stimFreq{end}(k))}(end+1) = responseSide(k)-1;
+        rightSideChoices{uniqueFreqVals == stimFreq{end}(k)}(end+1) = responseSide(k)-1;
     end
 end
 
@@ -569,7 +571,7 @@ avRightSideChoice = nan(size(rightSideChoices)); lowerBound = nan(size(rightSide
 for k=1:length(uniqueFreqVals)
     for n=1:3 %The sensory modalities
         if ~isempty(rightSideChoices{n,k})
-            avRightSideChoice(n,k) = nanmean(rightSideChoices{n,k});
+            avRightSideChoice(n,k) = mean(rightSideChoices{n,k}, 'omitnan');
             [lowerBound(n,k), upperBound(n,k)] = calculateWilsonScoreInerval(rightSideChoices{n,k});
         end
     end
@@ -578,11 +580,11 @@ end
 %Get the average performance on the easiest condtions for all the sessions
 easiestStimuli = [min(uniqueFreqVals) max(uniqueFreqVals)]; %Find the easiest conditions assuming that there will always be presentation of these
 for k=1:sessionsBack+1
-    tmp = nanmean([performance{k}(find(stimFreq{k}(:,1) == easiestStimuli(1))),performance{k}(find(stimFreq{k}(:,1) == easiestStimuli(2)))]);
-    tmp = [tmp; nanmean([performance{k}(find(stimFreq{k}(:,2) == easiestStimuli(1))),performance{k}(find(stimFreq{k}(:,2) == easiestStimuli(2)))])];
-    tmp = [tmp; nanmean([performance{k}(find(stimFreq{k}(:,3) == easiestStimuli(1))),performance{k}(find(stimFreq{k}(:,3) == easiestStimuli(2)))])];
+    tmp = mean([performance{k}(stimFreq{k}(:,1) == easiestStimuli(1)),performance{k}(stimFreq{k}(:,1) == easiestStimuli(2))], 'omitnan');
+    tmp = [tmp; mean([performance{k}(stimFreq{k}(:,2) == easiestStimuli(1)),performance{k}(stimFreq{k}(:,2) == easiestStimuli(2))], 'omitnan')];
+    tmp = [tmp; mean([performance{k}(stimFreq{k}(:,3) == easiestStimuli(1)),performance{k}(stimFreq{k}(:,3) == easiestStimuli(2))], 'omitnan')];
     
-    performanceEasiest(k) = nanmean(tmp);
+    performanceEasiest(k) = mean(tmp, 'omitnan');
     
 %     performanceEasiest(k) = nanmean([performance{k}(find(stimFreq{k} == easiestStimuli(1))),...
 %     performance{k}(find(stimFreq{k} == easiestStimuli(2)))]);
@@ -611,7 +613,7 @@ if fitPsychometric
             end
         end
       else
-        [perceptualModelStats, PFxdata, PFydata, freqBias, freqSensitivity] = logistic_multiFreq(performance{end}, responseSide-1, stimFreq{end}, 12);
+        [~, PFxdata, PFydata, freqBias, freqSensitivity] = logistic_multiFreq(performance{end}, responseSide-1, stimFreq{end}, 12);
     end
 else
     freqBias = [];
@@ -639,11 +641,11 @@ for s = 1:sessionsBack+1
     if newChipmunk
         earlyWithdrawalSessions(s) = sum(earlyWithdrawals{s})/numTrials(s);
     else
-    earlyWithdrawalSessions(s) = nanmean(earlyWithdrawals{s});
+    earlyWithdrawalSessions(s) = mean(earlyWithdrawals{s}, 'omitnan');
     end
-    performanceSessions(s) = nanmean(performance{s});
-    movementSessions(s) = nanmedian(motionTime{s});
-    gapTimeSessions(s) = nanmedian(gapTime{s});
+    performanceSessions(s) = mean(performance{s}, 'omitnan');
+    movementSessions(s) = median(motionTime{s}, 'omitnan');
+    gapTimeSessions(s) = median(gapTime{s}, 'omitnan');
 end
 
 %-----------------------------------
@@ -695,7 +697,7 @@ figPanels = struct();
  uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.36,7/11,0.12,1/11],'style', 'text', 'String',num2str(numTrials(end)), 'HorizontalAlignment','left','BackgroundColor','w');
  uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.36,6/11,0.12,1/11],'style', 'text', 'String',num2str(earlyWithdrawalSessions(end)), 'HorizontalAlignment','left','BackgroundColor','w');
  uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.36,5/11,0.12,1/11],'style', 'text', 'String',num2str(noChoice(end)), 'HorizontalAlignment','left','BackgroundColor','w');
- uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.36,4/11,0.12,1/11],'style', 'text', 'String',num2str(nanmedian(trialDuration{end})), 'HorizontalAlignment','left','BackgroundColor','w');
+ uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.36,4/11,0.12,1/11],'style', 'text', 'String',num2str(median(trialDuration{end}, 'omitnan')), 'HorizontalAlignment','left','BackgroundColor','w');
  uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.36,3/11,0.12,1/11],'style', 'text', 'String',num2str(SessionData.TrialSettings(end).leftRewardVolume), 'HorizontalAlignment','left','BackgroundColor','w');
  uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.36,2/11,0.12,1/11],'style', 'text', 'String',num2str(totalLeftRewards/1000), 'HorizontalAlignment','left','BackgroundColor','w');
  uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.36,1/11,0.12,1/11],'style', 'text', 'String',num2str(totalRightRewards/1000), 'HorizontalAlignment','left','BackgroundColor','w');
@@ -726,7 +728,7 @@ figPanels = struct();
  %uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.88,9/11,0.12,1/11],'style', 'text', 'String',num2str(SessionData.TrialSettings(end).PunishDuration), 'HorizontalAlignment','left','BackgroundColor','w');
  uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.88,8/11,0.12,1/11],'style', 'text', 'String',num2str(fractionLeftAssigned(end)), 'HorizontalAlignment','left','BackgroundColor','w');
  uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.88,7/11,0.12,1/11],'style', 'text', 'String',num2str(extendedStim(end)), 'HorizontalAlignment','left','BackgroundColor','w');
- uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.88,6/11,0.12,1/11],'style', 'text', 'String',num2str(nanmedian(absoluteWaitTime{end})), 'HorizontalAlignment','left','BackgroundColor','w');
+ uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.88,6/11,0.12,1/11],'style', 'text', 'String',num2str(median(absoluteWaitTime{end}, 'omitnan')), 'HorizontalAlignment','left','BackgroundColor','w');
  uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.88,5/11,0.12,1/11],'style', 'text', 'String',num2str(gapTimeSessions(end)), 'HorizontalAlignment','left','BackgroundColor','w');
  uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.88,4/11,0.12,1/11],'style', 'text', 'String',num2str(leftwardBias(end)), 'HorizontalAlignment','left','BackgroundColor','w');
  uicontrol('Parent', figPanels.parameters,'Units', 'normal', 'Position',[0.88,3/11,0.12,1/11],'style', 'text', 'String',num2str(performanceEasiest(end)), 'HorizontalAlignment','left','BackgroundColor','w');
@@ -787,11 +789,11 @@ box off
 axes(acrossTrials.waitTimes)
 hold on
 dotSize  = 36 * 100/SessionData.nTrials;
-sucH = scatter(find(earlyWithdrawals{s} == 0), waitTimeDiff(find(earlyWithdrawals{end} == 0)),dotSize, 'filled','MarkerFaceColor',[0.1 0.4 1]);
+sucH = scatter(find(earlyWithdrawals{s} == 0), waitTimeDiff(earlyWithdrawals{end} == 0),dotSize, 'filled','MarkerFaceColor',[0.1 0.4 1]);
 if isfield(SessionData, 'ObsOutcomeRecord')
-    sucM = scatter(find(SessionData.ObsOutcomeRecord==1 & SessionData.OutcomeRecord > -1), waitTimeDiff(find(SessionData.ObsOutcomeRecord==1 & SessionData.OutcomeRecord > -1)), dotSize,'filled','MarkerFaceColor',[0, 0.8, 0.4]);
+    sucM = scatter(find(SessionData.ObsOutcomeRecord==1 & SessionData.OutcomeRecord > -1), waitTimeDiff(SessionData.ObsOutcomeRecord==1 & SessionData.OutcomeRecord > -1), dotSize,'filled','MarkerFaceColor',[0, 0.8, 0.4]);
 end
-eWitH = scatter(find(earlyWithdrawals{s} == 1), waitTimeDiff(find(earlyWithdrawals{end} == 1)),dotSize,'MarkerEdgeColor','r');
+eWitH = scatter(find(earlyWithdrawals{s} == 1), waitTimeDiff(earlyWithdrawals{end} == 1),dotSize,'MarkerEdgeColor','r');
 %include info about the wait time progresion, very clunky...
 if ischar(SessionData.TrialSettings(2).minWaitTime) && ischar(SessionData.TrialSettings(end).minWaitTime)
     report_string = 'Wait time start: %s, end: %s s';
@@ -901,7 +903,7 @@ title('Go cue reaction times')
 axes(withinSession.waitTime)
 plot(waitTimeXdata,waitTimeYdata)
 hold on
-line([nanmedian(targetWaitTime{end}) nanmedian(targetWaitTime{end})],ylim,'LineStyle','--','Color','k')
+line([median(targetWaitTime{end}, 'omitnan') median(targetWaitTime{end}, 'omitnan')],ylim,'LineStyle','--','Color','k')
 xlim([0 3]);% ylim([0 sum(waitTimeYdata)/length(waitTimeYdata)]) %Y limit to not exceed max if every observation was inside one xvalue bin
 set(gca,'tickDir','out'); box off
 xlabel('Wait time (s)')
@@ -923,8 +925,8 @@ axes(withinSession.gapTime)
 hold on
 spacingSuccess = (0.5 - rand(length(find(performance{end} == 1)),1))*0.6;
 spacingFail = (0.5 - rand(length(find(performance{end} == 0)),1))*0.6;
-scatter(1+spacingSuccess, gapTime{end}(find(performance{end} == 1)),15,'filled','MarkerFaceColor',[0.35 0.8 0.1])
-scatter(2+spacingFail,gapTime{end}(find(performance{end} == 0)),15,'filled','MarkerFaceColor',[0.79 0.2 0.1])
+scatter(1+spacingSuccess, gapTime{end}(performance{end} == 1),15,'filled','MarkerFaceColor',[0.35 0.8 0.1])
+scatter(2+spacingFail,gapTime{end}(performance{end} == 0),15,'filled','MarkerFaceColor',[0.79 0.2 0.1])
 %line([1-0.3 1+0.3],[mean(reportingSpeed(find(OutcomeRecord == 1))) mean(reportingSpeed(find(OutcomeRecord == 1)))],'color','k','LineWidth',1.6)
 %line([2-0.3 2+0.3],[mean(reportingSpeed(find(OutcomeRecord == 0))) mean(reportingSpeed(find(OutcomeRecord == 0)))],'color','k','LineWidth',1.6)
 set(gca,'tickDir','out'); box off; grid on;
@@ -1062,7 +1064,7 @@ axes(acrossSessions.bodyWeight)
 plot(bodyWeight,'-o','color',[0.4 0.4 0.4])
 xlim([0 sessionsBack+1])
 % xticks([0 sessionsBack+1]); xticklabels([]);
-xticks([0:sessionsBack+1]);  xticklabels([{''},dates]); xtickangle(45);
+xticks(0:sessionsBack+1);  xticklabels([{''},dates]); xtickangle(45);
 ylim([12 30])
 box off; grid on
 set(gca,'TickDir','out')
